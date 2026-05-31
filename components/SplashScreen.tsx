@@ -40,7 +40,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         <img
           src="/logo.png"
           alt="Kelowna Wildlife Tracker"
-          className="w-56 sm:w-72 h-auto max-w-[75vw] object-contain"
+  className="w-72 sm:w-96 h-auto max-w-[85vw] object-contain"
           draggable={false}
         />
 
