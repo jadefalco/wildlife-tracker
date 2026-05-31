@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getSpeciesByCategory, type SpeciesOption } from '@/lib/species';
+import { getSpeciesByCategory, findSpecies, type Species, type SpeciesCategory } from '@/lib/species';
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
+import SpeciesInfoPanel from '@/components/SpeciesInfoPanel';
 
 function toLocalDateTimeString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -27,7 +28,7 @@ export default function SightingForm({
   userLocation,
   onSubmitSuccess,
 }: SightingFormProps) {
-  const [category, setCategory] = useState<SpeciesOption['category']>('Bird');
+  const [category, setCategory] = useState<SpeciesCategory>('Bird');
   const [speciesName, setSpeciesName] = useState('');
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
@@ -45,6 +46,8 @@ export default function SightingForm({
   const filteredSpecies = searchQuery.trim()
     ? speciesOptions.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : speciesOptions;
+
+  const selectedSpecies: Species | undefined = speciesName ? findSpecies(speciesName) : undefined;
 
   useEffect(() => {
     if (isOpen) {
@@ -215,6 +218,13 @@ export default function SightingForm({
             <p className="mt-1.5 text-xs text-gray-500">
               If unsure, select &ldquo;Not Sure / Other&rdquo; — accuracy is more important than guessing.
             </p>
+
+            {/* Species Information Panel */}
+            {selectedSpecies && (
+              <div className="mt-3">
+                <SpeciesInfoPanel species={selectedSpecies} />
+              </div>
+            )}
           </div>
 
           {/* Date & Time */}
