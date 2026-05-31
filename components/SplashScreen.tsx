@@ -67,7 +67,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           <img
             src="/truenorth-logo.png"
             alt="True North"
-             className="w-50  sm:w-64 h-auto max-w-[85vw] object-contain"
+             className="w-44   sm:w-56 h-auto max-w-[85vw] object-contain"
             draggable={false}
           />
         </a>
