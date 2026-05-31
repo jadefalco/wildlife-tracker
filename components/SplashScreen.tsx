@@ -13,12 +13,12 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
       setFading(true);
-    }, 1800);
+    }, 2800);
 
     const hideTimer = setTimeout(() => {
       setVisible(false);
       onComplete?.();
-    }, 2000);
+    }, 3800);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -67,7 +67,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           <img
             src="/truenorth-logo.png"
             alt="True North"
-            className="h-8 sm:h-10 w-auto object-contain"
+             className="w-50  sm:w-64 h-auto max-w-[85vw] object-contain"
             draggable={false}
           />
         </a>
