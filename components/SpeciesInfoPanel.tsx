@@ -19,8 +19,7 @@ export default function SpeciesInfoPanel({ species }: SpeciesInfoPanelProps) {
     return (
       <div className="rounded-xl border border-nature-200 bg-nature-50/60 p-4">
         <p className="text-sm text-nature-800">
-          <span className="font-medium">Not Sure / Other</span> —{' '}
-          {species.description}
+          <span className="font-medium">Not Sure / Other</span> — {species.description}
         </p>
       </div>
     );
@@ -28,24 +27,33 @@ export default function SpeciesInfoPanel({ species }: SpeciesInfoPanelProps) {
 
   return (
     <div className="rounded-xl border border-nature-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex gap-4 p-4">
-        {/* Thumbnail */}
+      <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
+        {/* Thumbnail container — fixed size, contain fit, subtle background */}
         {species.imageUrl && (
-          <div className="shrink-0">
-            <img
-              src={species.imageUrl}
-              alt={species.name}
-              className="w-[120px] h-[90px] object-cover rounded-lg"
-              loading="lazy"
-            />
+          <div className="shrink-0 flex items-center justify-center mx-auto sm:mx-0">
+            <div
+              className="flex items-center justify-center rounded-lg p-2"
+              style={{
+                width: 180,
+                height: 140,
+                backgroundColor: '#f5f5f5',
+              }}
+            >
+              <img
+                src={species.imageUrl}
+                alt={species.name}
+                className="max-w-full max-h-full object-contain rounded"
+                loading="lazy"
+              />
+            </div>
           </div>
         )}
 
         {/* Info */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
           {/* Category Badge */}
           <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold mb-2 ${
+            className={`inline-block self-start rounded-full px-2.5 py-0.5 text-xs font-semibold mb-2 ${
               categoryBadgeStyles[species.category] ?? 'bg-gray-100 text-gray-800'
             }`}
           >
@@ -53,16 +61,16 @@ export default function SpeciesInfoPanel({ species }: SpeciesInfoPanelProps) {
           </span>
 
           {/* Common Name */}
-          <h3 className="text-base font-bold text-nature-900 leading-tight">{species.name}</h3>
+          <h3 className="text-lg font-bold text-nature-900 leading-tight">{species.name}</h3>
 
           {/* Scientific Name */}
           {species.scientificName && (
-            <p className="text-sm italic text-nature-600 mt-0.5">{species.scientificName}</p>
+            <p className="text-sm italic text-nature-600 mt-1">{species.scientificName}</p>
           )}
 
           {/* Description */}
           {species.description && (
-            <p className="text-sm text-gray-700 mt-1.5 leading-relaxed">{species.description}</p>
+            <p className="text-sm text-gray-700 mt-2 leading-relaxed">{species.description}</p>
           )}
 
           {/* Wikipedia Link */}
@@ -71,7 +79,7 @@ export default function SpeciesInfoPanel({ species }: SpeciesInfoPanelProps) {
               href={species.wikipediaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-nature-700 hover:text-nature-900 font-medium mt-2 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-nature-700 hover:text-nature-900 font-medium mt-3 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

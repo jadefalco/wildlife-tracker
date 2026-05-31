@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import SightingForm from '@/components/SightingForm';
 import SubmissionModal from '@/components/SubmissionModal';
+import SplashScreen from '@/components/SplashScreen';
 import { getObservations, type Observation } from '@/lib/supabase';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmissionOpen, setIsSubmissionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
 
   const fetchObservations = useCallback(async () => {
     try {
@@ -61,7 +63,9 @@ export default function HomePage() {
   );
 
   return (
-    <main className="h-[100dvh] flex flex-col relative">
+    <>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      <main className="h-[100dvh] flex flex-col relative">
       {/* Header */}
       <header className="bg-nature-800 text-white px-4 py-3 flex items-center justify-between shrink-0 z-10">
         <div>
@@ -143,5 +147,6 @@ export default function HomePage() {
       />
       <SubmissionModal isOpen={isSubmissionOpen} onClose={() => setIsSubmissionOpen(false)} />
     </main>
+    </>
   );
 }
