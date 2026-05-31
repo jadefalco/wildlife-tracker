@@ -40,7 +40,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         <img
           src="/logo.png"
           alt="Kelowna Wildlife Tracker"
-  className="w-72 sm:w-96 h-auto max-w-[85vw] object-contain"
+  className="w-80 sm:w-96 h-auto max-w-[85vw] object-contain"
           draggable={false}
         />
 
@@ -67,7 +67,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           <img
             src="/truenorth-logo.png"
             alt="True North"
-             className="w-44   sm:w-56 h-auto max-w-[85vw] object-contain"
+             className="w-36   sm:w-44 h-auto max-w-[85vw] object-contain"
             draggable={false}
           />
         </a>
