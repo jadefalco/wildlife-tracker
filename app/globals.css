@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-nature-50 text-gray-900;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-nature-600 px-6 py-4 text-lg font-semibold text-white shadow-sm transition-colors hover:bg-nature-700 active:bg-nature-800;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-4 text-lg font-semibold text-nature-700 shadow-sm ring-1 ring-inset ring-nature-200 transition-colors hover:bg-nature-50 active:bg-nature-100;
+  }
+
+  .input-field {
+    @apply block w-full rounded-lg border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-nature-500 sm:text-sm sm:leading-6;
+  }
+
+  .label-text {
+    @apply block text-sm font-medium leading-6 text-gray-900;
+  }
+}
+
+/* Leaflet custom styles */
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
