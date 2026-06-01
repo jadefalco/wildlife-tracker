@@ -35,12 +35,20 @@ export default function AdminPage() {
           <h1 className="text-lg font-bold">Admin Dashboard</h1>
           <p className="text-xs text-nature-200">Kelowna Wildlife Tracker</p>
         </div>
-        <Link
-          href="/"
-          className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
-        >
-          Back to Map
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/species"
+            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
+          >
+            Species
+          </Link>
+          <Link
+            href="/"
+            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
+          >
+            Back to Map
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">

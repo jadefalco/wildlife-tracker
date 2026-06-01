@@ -4,56 +4,108 @@
 
 ## Purpose
 
-Common bird species supported in Version 1 of Kelowna Wildlife Tracker.
+Common and uncommon bird species supported in Version 1 of Kelowna Wildlife Tracker.
 
-These species are commonly found in Kelowna and the Okanagan region.
+These species occur in Kelowna and the Central Okanagan.
 
 ---
 
-## Birds
+## Common Birds
 
-* American Robin
-* Canada Goose
+* Not Sure / Other
+
+* Blackbird, Brewer's
+
+* Chickadee, Black-capped
+
+* Chickadee, Mountain
+
+* Cormorant, Double-crested
+
+* Crow, American
+
+* Dove, Eurasian Collared-
+
+* Dove, Mourning
+
+* Eagle, Bald
+
+* Finch, American Goldfinch
+
+* Finch, House
+
+* Flicker, Northern
+
+* Goose, Canada
+
+* Heron, Great Blue
+
+* Hawk, Cooper's
+
+* Hawk, Red-tailed
+
+* Jay, Steller's
+
+* Junco, Dark-eyed
+
 * Mallard Duck
-* Northern Flicker
-* Red-winged Blackbird
-* Yellow Warbler
-* House Sparrow
-* European Starling
-* Black-capped Chickadee
-* Mountain Chickadee
-* Dark-eyed Junco
-* White-crowned Sparrow
-* Song Sparrow
-* Western Meadowlark
-* American Goldfinch
-* Pine Siskin
-* Bald Eagle
+
+* Meadowlark, Western
+
+* Nuthatch, White-breasted
+
 * Osprey
-* Red-tailed Hawk
-* Cooper's Hawk
-* Great Blue Heron
-* Common Raven
-* American Crow
+
+* Pigeon, Rock
+
+* Pine Siskin
+
+* Quail, California
+
+* Raven, Common
+
+* Robin, American
+
+* Sparrow, House
+
+* Sparrow, Song
+
+* Sparrow, White-crowned
+
+* Starling, European
+
+* Towhee, Spotted
+
+* Turkey Vulture
+
+* Warbler, Yellow
+
+* Waxwing, Cedar
 
 ---
 
-## Future Expansion Candidates
+## Uncommon / Occasional Birds
 
-Potential additions:
-
-* Swainson's Hawk
-* Northern Harrier
-* Western Kingbird
-* American Kestrel
-* Great Horned Owl
-* Barred Owl
-* Belted Kingfisher
+* Blue Jay
+* Cowbird, Brown-headed
+* Crane, Sandhill
+* Finch, Purple
+* Grosbeak, Evening
+* Gull, California
+* Gull, Ring-billed
+* Harrier, Northern
+* Kestrel, American
+* Kingbird, Western
+* Kingfisher, Belted
 * Killdeer
-* Sandhill Crane
-* Common Loon
-
-These species may be added in future releases.
+* Loon, Common
+* Owl, Barred
+* Owl, Great Horned
+* Waxwing, Bohemian
+* Woodpecker, Downy
+* Woodpecker, Hairy
+* Woodpecker, Pileated
+* Hawk, Swainson's
 
 ---
 

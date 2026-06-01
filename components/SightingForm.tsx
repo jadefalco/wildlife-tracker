@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getSpeciesByCategory, findSpecies, type Species, type SpeciesCategory } from '@/lib/species';
+import { getSpeciesByCategory, filterSpeciesLocal, type SpeciesRecord } from '@/lib/species';
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
 import SpeciesInfoPanel from '@/components/SpeciesInfoPanel';
 
@@ -22,13 +22,16 @@ interface SightingFormProps {
   onSubmitSuccess: (obs: Observation) => void;
 }
 
+const CATEGORY_ORDER = ['Bird', 'Mammal', 'Reptile / Amphibian'] as const;
+type Category = (typeof CATEGORY_ORDER)[number];
+
 export default function SightingForm({
   isOpen,
   onClose,
   userLocation,
   onSubmitSuccess,
 }: SightingFormProps) {
-  const [category, setCategory] = useState<SpeciesCategory>('Bird');
+  const [category, setCategory] = useState<Category>('Bird');
   const [speciesName, setSpeciesName] = useState('');
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
@@ -38,16 +41,17 @@ export default function SightingForm({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speciesList, setSpeciesList] = useState<SpeciesRecord[]>([]);
+  const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const speciesOptions = getSpeciesByCategory(category);
   const filteredSpecies = searchQuery.trim()
-    ? speciesOptions.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : speciesOptions;
+    ? filterSpeciesLocal(speciesList, searchQuery)
+    : speciesList;
 
-  const selectedSpecies: Species | undefined = speciesName ? findSpecies(speciesName) : undefined;
+  const selectedSpecies = speciesList.find((s) => s.display_name === speciesName);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,6 +59,41 @@ export default function SightingForm({
       setError(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setIsLoadingSpecies(true);
+    getSpeciesByCategory(category)
+      .then((data) => {
+        if (!cancelled) {
+          // Append "Not Sure / Other" at the end
+          const notSure: SpeciesRecord = {
+            id: 'not-sure',
+            sort_name: 'Not Sure / Other',
+            display_name: 'Not Sure / Other',
+            category,
+            rarity: 'Common',
+            slug: 'not-sure',
+            wikipedia_url: null,
+            thumbnail_url: null,
+            image_source: null,
+            observation_count: 0,
+            created_at: '',
+            updated_at: '',
+          };
+          setSpeciesList([...data, notSure]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load species:', err);
+        if (!cancelled) setError('Failed to load species list.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSpecies(false);
+      });
+    return () => { cancelled = true; };
+  }, [category, isOpen]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -117,7 +156,6 @@ export default function SightingForm({
       });
 
       onSubmitSuccess(observation);
-      // Reset form
       setSpeciesName('');
       setNotes('');
       setPhoto(null);
@@ -159,7 +197,7 @@ export default function SightingForm({
           <div>
             <label className="label-text mb-1.5">Species Category</label>
             <div className="grid grid-cols-3 gap-2">
-              {(['Bird', 'Mammal', 'Reptile / Amphibian'] as const).map((cat) => (
+              {CATEGORY_ORDER.map((cat) => (
                 <button
                   key={cat}
                   type="button"
@@ -192,25 +230,29 @@ export default function SightingForm({
                 setShowDropdown(true);
               }}
               onFocus={() => setShowDropdown(true)}
-              placeholder="Search species..."
-              className="input-field"
+              placeholder={isLoadingSpecies ? 'Loading species...' : 'Search species...'}
+              disabled={isLoadingSpecies}
+              className="input-field disabled:opacity-50"
             />
             {showDropdown && filteredSpecies.length > 0 && (
               <div className="absolute z-10 mt-1 w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 max-h-56 overflow-auto">
                 {filteredSpecies.map((s) => (
                   <button
-                    key={s.name}
+                    key={s.id}
                     type="button"
                     onClick={() => {
-                      setSpeciesName(s.name);
+                      setSpeciesName(s.display_name);
                       setSearchQuery('');
                       setShowDropdown(false);
                     }}
                     className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-nature-50 ${
-                      speciesName === s.name ? 'bg-nature-50 font-medium text-nature-800' : 'text-gray-700'
+                      speciesName === s.display_name ? 'bg-nature-50 font-medium text-nature-800' : 'text-gray-700'
                     }`}
                   >
-                    {s.name}
+                    {s.display_name}
+                    {s.rarity === 'Uncommon' && (
+                      <span className="ml-2 text-xs text-earth-600">(Uncommon)</span>
+                    )}
                   </button>
                 ))}
               </div>

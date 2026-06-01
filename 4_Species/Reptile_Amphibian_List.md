@@ -4,48 +4,54 @@
 
 ## Purpose
 
-Common reptile and amphibian species supported in Version 1 of Kelowna Wildlife Tracker.
+Common and uncommon reptile and amphibian species supported in Version 1 of Kelowna Wildlife Tracker.
 
-These species are known to occur in Kelowna and the surrounding Okanagan Valley.
+These species occur in Kelowna and the Central Okanagan.
 
 ---
 
-## Reptiles and Amphibians
+## Common Reptiles and Amphibians
 
-### Turtles
-
-* Painted Turtle
-* Western Painted Turtle
+* Not Sure / Other
 
 ### Frogs and Toads
 
-* Western Toad
-* Pacific Tree Frog
+* Frog, Columbia Spotted
+* Frog, Pacific Tree
+* Toad, Western
 
 ### Salamanders
 
-* Long-toed Salamander
+* Salamander, Long-toed
 
 ### Snakes
 
-* Common Garter Snake
-* Western Terrestrial Garter Snake
-* Garter Snake
+* Gophersnake, Great Basin
+* Garter Snake, Common
+* Garter Snake, Western Terrestrial
+* Racer, Yellow-bellied
+* Rattlesnake, Western
 * Rubber Boa
-* Racer (Yellow-bellied Racer)
+
+### Lizards
+
+* Lizard, Northern Alligator
+
+### Turtles
+
+* Turtle, Western Painted
 
 ---
 
-## Future Expansion Candidates
+## Uncommon / Occasional Reptiles and Amphibians
 
-Potential additions:
+### Frogs
 
-* Great Basin Gopher Snake
-* Western Rattlesnake
-* Tiger Salamander
-* Columbia Spotted Frog
+* Bullfrog
 
-Future additions should be based on local species occurrence and stakeholder feedback.
+### Salamanders
+
+* Salamander, Tiger
 
 ---
 

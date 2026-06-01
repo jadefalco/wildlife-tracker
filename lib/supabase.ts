@@ -18,7 +18,7 @@ export function getSupabase(): SupabaseClient {
 
 export interface Observation {
   id: string;
-  species_category: 'Bird' | 'Mammal' | 'Reptile / Amphibian';
+  species_category: string;
   species_name: string;
   latitude: number;
   longitude: number;
@@ -28,8 +28,23 @@ export interface Observation {
   created_at: string;
 }
 
+export interface SpeciesRecord {
+  id: string;
+  sort_name: string;
+  display_name: string;
+  category: string;
+  rarity: string;
+  slug: string;
+  wikipedia_url: string | null;
+  thumbnail_url: string | null;
+  image_source: string | null;
+  observation_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CreateObservationInput {
-  species_category: 'Bird' | 'Mammal' | 'Reptile / Amphibian';
+  species_category: string;
   species_name: string;
   latitude: number;
   longitude: number;
@@ -87,4 +102,68 @@ export async function uploadPhoto(file: File): Promise<string> {
 
   const { data } = client.storage.from('wildlife-photos').getPublicUrl(filePath);
   return data.publicUrl;
+}
+
+// ── Species API ──
+
+export async function getSpecies(): Promise<SpeciesRecord[]> {
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('species')
+    .select('*')
+    .order('display_name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as SpeciesRecord[];
+}
+
+export async function getSpeciesByCategory(category: string): Promise<SpeciesRecord[]> {
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('species')
+    .select('*')
+    .eq('category', category)
+    .order('display_name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as SpeciesRecord[];
+}
+
+export async function getSpeciesBySlug(slug: string): Promise<SpeciesRecord | null> {
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('species')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null; // no rows
+    throw error;
+  }
+  return data as SpeciesRecord;
+}
+
+export async function searchSpecies(query: string): Promise<SpeciesRecord[]> {
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('species')
+    .select('*')
+    .ilike('display_name', `%${query}%`)
+    .order('display_name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as SpeciesRecord[];
+}
+
+export async function getSpeciesCategories(): Promise<string[]> {
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('species')
+    .select('category')
+    .order('category', { ascending: true });
+
+  if (error) throw error;
+  const categories = Array.from(new Set((data ?? []).map((d: { category: string }) => d.category)));
+  return categories;
 }

@@ -1,13 +1,10 @@
 -- Kelowna Wildlife Tracker - Database Schema (Version 1)
 -- Run this in your Supabase SQL Editor
 
--- Enable PostGIS extension for geospatial queries (optional but recommended for future)
--- create extension if not exists postgis;
-
 -- Observations table
 CREATE TABLE IF NOT EXISTS observations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  species_category TEXT NOT NULL CHECK (species_category IN ('Bird', 'Mammal', 'Reptile / Amphibian')),
+  species_category TEXT NOT NULL,
   species_name TEXT NOT NULL,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
@@ -19,20 +16,48 @@ CREATE TABLE IF NOT EXISTS observations (
 
 -- Index for faster map queries
 CREATE INDEX IF NOT EXISTS idx_observations_location ON observations (latitude, longitude);
-
--- Index for sorting by timestamp
 CREATE INDEX IF NOT EXISTS idx_observations_timestamp ON observations (observation_timestamp DESC);
+
+-- Species table (dynamic, driven by markdown files)
+CREATE TABLE IF NOT EXISTS species (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sort_name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  rarity TEXT NOT NULL DEFAULT 'Common',
+  slug TEXT NOT NULL UNIQUE,
+  wikipedia_url TEXT,
+  thumbnail_url TEXT,
+  image_source TEXT,
+  observation_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_species_category ON species (category);
+CREATE INDEX IF NOT EXISTS idx_species_slug ON species (slug);
+CREATE INDEX IF NOT EXISTS idx_species_display_name ON species (display_name);
+CREATE INDEX IF NOT EXISTS idx_species_rarity ON species (rarity);
 
 -- Enable Row Level Security (RLS) but allow public access for Version 1
 ALTER TABLE observations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE species ENABLE ROW LEVEL SECURITY;
 
--- Allow anonymous inserts
+-- Observations policies
 CREATE POLICY "Allow anonymous inserts" ON observations
   FOR INSERT TO anon WITH CHECK (true);
-
--- Allow anonymous selects
 CREATE POLICY "Allow anonymous selects" ON observations
   FOR SELECT TO anon USING (true);
+
+-- Species policies (public read/write for build sync)
+CREATE POLICY "Allow anonymous selects on species" ON species
+  FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anonymous inserts on species" ON species
+  FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anonymous updates on species" ON species
+  FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anonymous deletes on species" ON species
+  FOR DELETE TO anon USING (true);
 
 -- Storage bucket for wildlife photos
 INSERT INTO storage.buckets (id, name, public)
@@ -42,7 +67,5 @@ ON CONFLICT (id) DO NOTHING;
 -- Allow public uploads to wildlife-photos bucket
 CREATE POLICY "Allow public uploads" ON storage.objects
   FOR INSERT TO public WITH CHECK (bucket_id = 'wildlife-photos');
-
--- Allow public reads from wildlife-photos bucket
 CREATE POLICY "Allow public reads" ON storage.objects
   FOR SELECT TO public USING (bucket_id = 'wildlife-photos');

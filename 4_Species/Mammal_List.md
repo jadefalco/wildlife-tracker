@@ -4,48 +4,58 @@
 
 ## Purpose
 
-Common mammal species supported in Version 1 of Kelowna Wildlife Tracker.
+Common and uncommon mammal species supported in Version 1 of Kelowna Wildlife Tracker.
 
-These species are relevant to Kelowna and surrounding Okanagan habitats.
+These species occur in Kelowna and the Central Okanagan.
 
 ---
 
-## Mammals
+## Common Mammals
 
-* Mule Deer
-* White-tailed Deer
-* Coyote
-* Black Bear
-* Grizzly Bear
-* Raccoon
-* Red Fox
-* Bobcat
-* Lynx
-* Snowshoe Hare
-* Nuttall's Cottontail
+* Not Sure / Other
+
 * Beaver
-* Muskrat
+
+* Bear, Black
+
 * Chipmunk
+
+* Coyote
+
+* Deer, Mule
+
+* Deer, White-tailed
+
+* Fox, Red
+
 * Ground Squirrel
-* River Otter
+
+* Hare, Snowshoe
+
+* Muskrat
+
+* Otter, River
+
+* Raccoon
+
+* Rabbit, Nuttall's Cottontail
 
 ---
 
-## Future Expansion Candidates
+## Uncommon / Occasional Mammals
 
-Potential additions:
-
+* Badger, American
+* Bear, Grizzly
+* Bobcat
 * Cougar
-* Wolf
-* Bighorn Sheep
-* Mountain Goat
 * Elk
+* Goat, Mountain
+* Lynx, Canada
+* Marmot, Yellow-bellied
 * Moose
-* American Badger
 * Porcupine
-* Marmot
-
-These species may be added in future releases.
+* Sheep, Bighorn
+* Wolf
 
 ---
 
@@ -61,12 +71,4 @@ Accurate reporting is more important than guessing.
 
 ---
 
-## Species at Risk Considerations
 
-Future versions may support:
-
-* Sensitive location handling
-* Protected species workflows
-* Observation review processes
-
-Do not implement during Version 1.
