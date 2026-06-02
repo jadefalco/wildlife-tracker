@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import AdminGuard from '@/components/AdminGuard';
+import AdminLayout from '@/components/AdminLayout';
 import { getSpecies, getSpeciesCategories, type SpeciesRecord } from '@/lib/supabase';
 
 const categoryBadgeStyles: Record<string, string> = {
@@ -12,7 +14,7 @@ const categoryBadgeStyles: Record<string, string> = {
   Insect: 'bg-purple-100 text-purple-800',
 };
 
-export default function AdminSpeciesPage() {
+function AdminSpeciesPageContent() {
   const [species, setSpecies] = useState<SpeciesRecord[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,27 +80,7 @@ export default function AdminSpeciesPage() {
   const missingWikipedia = species.filter((s) => !s.wikipedia_url).length;
 
   return (
-    <main className="min-h-screen bg-nature-50">
-      <header className="bg-nature-800 text-white px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold">Species Management</h1>
-          <p className="text-xs text-nature-200">Kelowna Wildlife Tracker</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin"
-            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
-          >
-            Observations
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
-          >
-            Map
-          </Link>
-        </div>
-      </header>
+    <AdminLayout title="Species Management">
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
@@ -266,6 +248,14 @@ export default function AdminSpeciesPage() {
           </div>
         )}
       </div>
-    </main>
+    </AdminLayout>
+  );
+}
+
+export default function AdminSpeciesPage() {
+  return (
+    <AdminGuard>
+      <AdminSpeciesPageContent />
+    </AdminGuard>
   );
 }

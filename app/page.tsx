@@ -2,22 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SightingForm from '@/components/SightingForm';
-import SubmissionModal from '@/components/SubmissionModal';
 import SplashScreen from '@/components/SplashScreen';
+import { createSession } from '@/lib/admin-session';
 import { getObservations, type Observation } from '@/lib/supabase';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false });
 
 export default function HomePage() {
+  const router = useRouter();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'loading' | 'granted' | 'denied'>('loading');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isSubmissionOpen, setIsSubmissionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = useState(false);
 
   const fetchObservations = useCallback(async () => {
     try {
@@ -72,12 +76,12 @@ export default function HomePage() {
           <h1 className="text-lg font-bold leading-tight">Kelowna Wildlife Tracker</h1>
           <p className="text-xs text-nature-200">Record &middot; Map &middot; Protect</p>
         </div>
-        <Link
-          href="/admin"
+        <button
+          onClick={() => setIsAdminModalOpen(true)}
           className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
         >
           Admin
-        </Link>
+        </button>
       </header>
 
       {/* Location Status Bar */}
@@ -133,9 +137,6 @@ export default function HomePage() {
           </svg>
           Log Wildlife Sighting
         </button>
-        <button onClick={() => setIsSubmissionOpen(true)} className="btn-secondary w-full text-base py-3">
-          Prepare Submission for Province
-        </button>
       </div>
 
       {/* Modals */}
@@ -145,7 +146,86 @@ export default function HomePage() {
         userLocation={userLocation}
         onSubmitSuccess={handleSubmitSuccess}
       />
-      <SubmissionModal isOpen={isSubmissionOpen} onClose={() => setIsSubmissionOpen(false)} />
+
+      {/* Admin Password Modal */}
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-nature-900">Admin Access</h2>
+              <button
+                onClick={() => {
+                  setIsAdminModalOpen(false);
+                  setAdminPassword('');
+                  setAdminError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setAdminError(null);
+                setAdminLoading(true);
+                try {
+                  const res = await fetch('/api/admin/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPassword }),
+                  });
+                  const data = await res.json();
+                  if (res.ok && data.success) {
+                    createSession();
+                    router.push('/admin');
+                  } else {
+                    setAdminError(data.error || 'Incorrect password.');
+                  }
+                } catch {
+                  setAdminError('Incorrect password.');
+                } finally {
+                  setAdminLoading(false);
+                }
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label htmlFor="admin-password" className="label-text mb-1.5">
+                  Password
+                </label>
+                <input
+                  id="admin-password"
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter admin password"
+                  autoFocus
+                />
+              </div>
+
+              {adminError && (
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {adminError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={adminLoading || !adminPassword}
+                className="btn-primary w-full disabled:opacity-60"
+              >
+                {adminLoading ? 'Verifying...' : 'Enter Admin'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
     </>
   );

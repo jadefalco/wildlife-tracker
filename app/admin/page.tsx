@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import AdminGuard from '@/components/AdminGuard';
+import AdminLayout from '@/components/AdminLayout';
 import AdminTable from '@/components/AdminTable';
 import { getObservations, type Observation } from '@/lib/supabase';
 
-export default function AdminPage() {
+function AdminPageContent() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,30 +30,8 @@ export default function AdminPage() {
   }, [fetchData]);
 
   return (
-    <main className="min-h-screen bg-nature-50">
-      <header className="bg-nature-800 text-white px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold">Admin Dashboard</h1>
-          <p className="text-xs text-nature-200">Kelowna Wildlife Tracker</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/species"
-            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
-          >
-            Species
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-nature-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-nature-700"
-          >
-            Back to Map
-          </Link>
-        </div>
-      </header>
-
+    <AdminLayout title="Admin Dashboard">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Total', value: observations.length, color: 'bg-nature-100 text-nature-800' },
@@ -97,6 +76,14 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-    </main>
+    </AdminLayout>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <AdminGuard>
+      <AdminPageContent />
+    </AdminGuard>
   );
 }
