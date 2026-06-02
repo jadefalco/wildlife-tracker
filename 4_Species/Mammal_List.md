@@ -16,7 +16,7 @@ These species occur in Kelowna and the Central Okanagan.
 
 * Beaver
 
-* Bear, Black
+* Bear, American Black
 
 * Chipmunk
 
