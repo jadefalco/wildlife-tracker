@@ -38,7 +38,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       {/* Main content — centered vertically and horizontally */}
       <div className="flex-1 flex flex-col items-center justify-center w-full px-6">
         <img
-          src="/logo.png"
+          src="/logo-owl.png"
           alt="Kelowna Wildlife Tracker"
   className="w-80 sm:w-96 h-auto max-w-[85vw] object-contain"
           draggable={false}
