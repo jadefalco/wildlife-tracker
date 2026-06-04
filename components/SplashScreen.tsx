@@ -58,7 +58,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       <div className="pb-8 sm:pb-10 flex flex-col items-center">
         <span className="text-xs text-nature-500 mb-2 tracking-wide">Powered by</span>
         <a
-          href="https://truenorth.com"
+          href="https://truenorthwebsites.com"
           target="_blank"
           rel="noopener noreferrer"
           className="opacity-80 hover:opacity-100 transition-opacity"
