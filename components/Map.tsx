@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -25,8 +25,17 @@ function MapController({
   zoom: number;
 }) {
   const map = useMap();
+  const prevCenterRef = useRef(center);
+  const prevZoomRef = useRef(zoom);
+
   useEffect(() => {
-    map.setView(center, zoom);
+    const [prevLat, prevLng] = prevCenterRef.current;
+    const [lat, lng] = center;
+    if (prevLat !== lat || prevLng !== lng || prevZoomRef.current !== zoom) {
+      map.setView(center, zoom);
+      prevCenterRef.current = center;
+      prevZoomRef.current = zoom;
+    }
   }, [center, zoom, map]);
   return null;
 }
@@ -53,7 +62,7 @@ export default function Map({ observations, userLocation, onMarkerClick }: MapPr
     return observations.map((obs) => (
       <Marker
         key={obs.id}
-        position={[obs.latitude, obs.longitude]}
+        position={[Number(obs.latitude), Number(obs.longitude)]}
         icon={defaultIcon}
         eventHandlers={{
           click: () => onMarkerClick?.(obs),
