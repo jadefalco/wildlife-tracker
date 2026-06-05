@@ -1,32 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
 
-// ── In-memory rate limiter ──
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 3;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return true;
-  }
-
-  entry.count++;
-  return false;
-}
 
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
@@ -34,6 +10,64 @@ function getClientIp(request: NextRequest): string {
     return forwarded.split(',')[0].trim();
   }
   return request.headers.get('x-real-ip') ?? 'unknown';
+}
+
+async function isRateLimited(ip: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const now = Date.now();
+  const windowStart = new Date(now - RATE_LIMIT_WINDOW_MS).toISOString();
+
+  // Check existing entry for this IP
+  const { data: existing, error: selectError } = await supabase
+    .from('rate_limits')
+    .select('request_count, window_start')
+    .eq('ip_address', ip)
+    .single();
+
+  if (selectError && selectError.code !== 'PGRST116') {
+    console.error('Rate limit select error:', selectError);
+  }
+
+  if (existing && existing.window_start > windowStart) {
+    // Within the current window
+    if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+      return true;
+    }
+    // Increment count
+    const { error: updateError } = await supabase
+      .from('rate_limits')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('ip_address', ip);
+
+    if (updateError) {
+      console.error('Rate limit update error:', updateError);
+    }
+    return false;
+  }
+
+  // No entry or window expired — reset with count = 1
+  const { error: upsertError } = await supabase
+    .from('rate_limits')
+    .upsert(
+      {
+        ip_address: ip,
+        request_count: 1,
+        window_start: new Date(now).toISOString(),
+      },
+      { onConflict: 'ip_address' }
+    );
+
+  if (upsertError) {
+    console.error('Rate limit upsert error:', upsertError);
+  }
+
+  // Best-effort cleanup of expired rows (older than 2 windows)
+  const cutoff = new Date(now - RATE_LIMIT_WINDOW_MS * 2).toISOString();
+  supabase.from('rate_limits').delete().lt('window_start', cutoff).then(({ error }) => {
+    if (error) console.error('Rate limit cleanup error:', error);
+  });
+
+  return false;
 }
 
 export async function GET() {
@@ -59,7 +93,7 @@ export async function POST(request: NextRequest) {
   try {
     const clientIp = getClientIp(request);
 
-    if (isRateLimited(clientIp)) {
+    if (await isRateLimited(clientIp)) {
       return NextResponse.json(
         { error: 'Too many submissions. Please wait a moment.' },
         { status: 429 }
