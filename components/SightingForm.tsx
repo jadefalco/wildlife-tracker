@@ -43,6 +43,7 @@ export default function SightingForm({
   const [error, setError] = useState<string | null>(null);
   const [speciesList, setSpeciesList] = useState<SpeciesRecord[]>([]);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,7 +138,7 @@ export default function SightingForm({
     setIsSubmitting(true);
 
     try {
-      let photoUrl: string | undefined;
+      let photoUrl: string | null = null;
       if (photo) {
         photoUrl = await uploadPhoto(photo);
       }
@@ -145,26 +146,44 @@ export default function SightingForm({
       const lat = userLocation?.lat ?? 49.8801;
       const lng = userLocation?.lng ?? -119.4436;
 
-      const observation = await createObservation({
-        species_category: category,
-        species_name: speciesName,
-        latitude: lat,
-        longitude: lng,
-        observation_timestamp: new Date(timestamp).toISOString(),
-        notes: notes.trim() || null,
-        photo_url: photoUrl ?? null,
+      const response = await fetch('/api/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          species_category: category,
+          species_name: speciesName,
+          latitude: lat,
+          longitude: lng,
+          observation_timestamp: new Date(timestamp).toISOString(),
+          notes: notes.trim() || null,
+          photo_url: photoUrl,
+          website: honeypot,
+        }),
       });
 
+      if (response.status === 429) {
+        setError('Too many submissions. Please wait a minute and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save observation.');
+      }
+
+      const { observation } = await response.json();
       onSubmitSuccess(observation);
       setSpeciesName('');
       setNotes('');
       setPhoto(null);
       setPhotoPreview(null);
       setSearchQuery('');
+      setHoneypot('');
       onClose();
     } catch (err) {
       console.error(err);
-      setError('Failed to save observation. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to save observation. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -353,6 +372,18 @@ export default function SightingForm({
               rows={3}
               placeholder="Behaviour, habitat, number of individuals..."
               className="input-field resize-none"
+            />
+          </div>
+
+          {/* Honeypot — hidden from users, bots fill it */}
+          <div className="absolute left-[-9999px]" aria-hidden="true">
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
             />
           </div>
 
