@@ -143,10 +143,23 @@ export default function SightingForm({
 
     try {
       // Capture fresh GPS at the exact moment of submission
-      let lat = userLocation?.lat ?? 49.8801;
-      let lng = userLocation?.lng ?? -119.4436;
-      console.log('[SightingForm] Initial fallback coordinates from userLocation prop:', { lat, lng, userLocationIsNull: userLocation === null });
+      // Require a valid location before allowing submission
+if (!userLocation) {
+  setError(
+    'Unable to determine your location. Please enable location services and try again.'
+  );
+  setIsSubmitting(false);
+  setSubmitStatus('idle');
+  return;
+}
 
+let lat = userLocation.lat;
+let lng = userLocation.lng;
+
+console.log('[SightingForm] Initial coordinates from userLocation:', {
+  lat,
+  lng,
+});
       if (navigator.geolocation) {
         console.log('[SightingForm] navigator.geolocation exists. Calling getCurrentPosition...');
         try {
@@ -359,7 +372,9 @@ export default function SightingForm({
                   <svg className="w-4 h-4 text-earth-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
-                  <span>Using default location (Kelowna, BC)</span>
+                 <span className="text-red-700">
+  Location unavailable. Enable location services to submit a sighting.
+</span>
                 </div>
               )}
             </div>
@@ -430,19 +445,21 @@ export default function SightingForm({
           </div>
 
           {/* Submit */}
-          <div className="pt-2 pb-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitStatus === 'locating'
-                ? 'Getting location...'
-                : submitStatus === 'saving'
-                ? 'Saving...'
-                : 'Save Observation'}
-            </button>
-          </div>
+<div className="pt-2 pb-4">
+  <button
+    type="submit"
+    disabled={isSubmitting || !userLocation}
+    className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {!userLocation
+      ? 'Location Required'
+      : submitStatus === 'locating'
+      ? 'Getting location...'
+      : submitStatus === 'saving'
+      ? 'Saving...'
+      : 'Save Observation'}
+  </button>
+</div>
         </form>
       </div>
     </div>
