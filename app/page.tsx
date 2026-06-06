@@ -69,7 +69,7 @@ export default function HomePage() {
 
   setLocationStatus('denied');
 },
-      { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }, []);
 
