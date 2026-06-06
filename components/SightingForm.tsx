@@ -57,10 +57,11 @@ export default function SightingForm({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('[SightingForm] Form opened. userLocation prop:', userLocation);
       setTimestamp(toLocalDateTimeString(new Date()));
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, userLocation]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -125,6 +126,7 @@ export default function SightingForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    console.log('[SightingForm] Save Observation clicked. userLocation prop:', userLocation);
 
     if (!speciesName.trim()) {
       setError('Please select a species.');
@@ -143,8 +145,10 @@ export default function SightingForm({
       // Capture fresh GPS at the exact moment of submission
       let lat = userLocation?.lat ?? 49.8801;
       let lng = userLocation?.lng ?? -119.4436;
+      console.log('[SightingForm] Initial fallback coordinates from userLocation prop:', { lat, lng, userLocationIsNull: userLocation === null });
 
       if (navigator.geolocation) {
+        console.log('[SightingForm] navigator.geolocation exists. Calling getCurrentPosition...');
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -155,10 +159,22 @@ export default function SightingForm({
           });
           lat = position.coords.latitude;
           lng = position.coords.longitude;
+          console.log('[SightingForm] getCurrentPosition SUCCESS:', { lat, lng, accuracy: position.coords.accuracy });
         } catch (geoErr) {
-          console.warn('Failed to get fresh location, using cached:', geoErr);
+          const err = geoErr as GeolocationPositionError;
+          console.log('[SightingForm] getCurrentPosition FAILED:', {
+            code: err.code,
+            message: err.message,
+            PERMISSION_DENIED: err.code === 1,
+            POSITION_UNAVAILABLE: err.code === 2,
+            TIMEOUT: err.code === 3,
+          });
         }
+      } else {
+        console.log('[SightingForm] navigator.geolocation does NOT exist');
       }
+
+      console.log('[SightingForm] Final coordinates being sent to API:', { lat, lng });
 
       setSubmitStatus('saving');
 

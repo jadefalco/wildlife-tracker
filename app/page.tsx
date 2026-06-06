@@ -39,23 +39,37 @@ export default function HomePage() {
   }, [fetchObservations]);
 
   useEffect(() => {
+    console.log('[page.tsx] Geolocation useEffect running. navigator.geolocation exists?', !!navigator.geolocation);
     if (!navigator.geolocation) {
+      console.log('[page.tsx] navigator.geolocation is NOT available');
       setLocationStatus('denied');
       return;
     }
 
+    console.log('[page.tsx] Calling navigator.geolocation.getCurrentPosition...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('[page.tsx] getCurrentPosition SUCCESS:', {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp,
+        });
         setUserLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
         setLocationStatus('granted');
       },
-      () => {
-        setLocationStatus('denied');
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      (error) => {
+  console.error('[page.tsx] Geolocation failed:', {
+    code: error.code,
+    message: error.message,
+  });
+
+  setLocationStatus('denied');
+},
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
     );
   }, []);
 
