@@ -44,6 +44,7 @@ export default function SightingForm({
   const [speciesList, setSpeciesList] = useState<SpeciesRecord[]>([]);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
   const [honeypot, setHoneypot] = useState('');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'locating' | 'saving'>('idle');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,15 +137,35 @@ export default function SightingForm({
     }
 
     setIsSubmitting(true);
+    setSubmitStatus('locating');
 
     try {
+      // Capture fresh GPS at the exact moment of submission
+      let lat = userLocation?.lat ?? 49.8801;
+      let lng = userLocation?.lng ?? -119.4436;
+
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            });
+          });
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        } catch (geoErr) {
+          console.warn('Failed to get fresh location, using cached:', geoErr);
+        }
+      }
+
+      setSubmitStatus('saving');
+
       let photoUrl: string | null = null;
       if (photo) {
         photoUrl = await uploadPhoto(photo);
       }
-
-      const lat = userLocation?.lat ?? 49.8801;
-      const lng = userLocation?.lng ?? -119.4436;
 
       const response = await fetch('/api/observations', {
         method: 'POST',
@@ -164,6 +185,7 @@ export default function SightingForm({
       if (response.status === 429) {
         setError('Too many submissions. Please wait a minute and try again.');
         setIsSubmitting(false);
+        setSubmitStatus('idle');
         return;
       }
 
@@ -180,12 +202,14 @@ export default function SightingForm({
       setPhotoPreview(null);
       setSearchQuery('');
       setHoneypot('');
+      setSubmitStatus('idle');
       onClose();
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Failed to save observation. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setSubmitStatus('idle');
     }
   };
 
@@ -310,7 +334,9 @@ export default function SightingForm({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Location captured automatically using device GPS</span>
+                  <span>
+                    {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -394,7 +420,11 @@ export default function SightingForm({
               disabled={isSubmitting}
               className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Saving...' : 'Save Observation'}
+              {submitStatus === 'locating'
+                ? 'Getting location...'
+                : submitStatus === 'saving'
+                ? 'Saving...'
+                : 'Save Observation'}
             </button>
           </div>
         </form>
