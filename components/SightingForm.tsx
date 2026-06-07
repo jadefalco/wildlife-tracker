@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSpeciesByCategory, filterSpeciesLocal, type SpeciesRecord } from '@/lib/species';
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
+import { validateImageFile } from '@/lib/image-utils';
 import SpeciesInfoPanel from '@/components/SpeciesInfoPanel';
 
 function toLocalDateTimeString(date: Date): string {
@@ -111,8 +112,9 @@ export default function SightingForm({
   const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Photo must be smaller than 5MB');
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        setError(validation.error ?? 'Invalid photo');
         return;
       }
       setPhoto(file);

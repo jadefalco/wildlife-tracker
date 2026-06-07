@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { compressImage } from './image-utils';
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -87,14 +88,19 @@ export async function getObservations(): Promise<Observation[]> {
 
 export async function uploadPhoto(file: File): Promise<string> {
   const client = getSupabase();
-  const fileExt = file.name.split('.').pop() ?? 'jpg';
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+  // Compress and resize on the client before uploading.
+  // Typical phone photos (3–8 MB) are reduced to ~150–400 KB,
+  // keeping the free Supabase storage tier viable as the app scales.
+  const compressed = await compressImage(file);
+
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.jpg`;
   const filePath = `${fileName}`;
 
   const { error: uploadError } = await client.storage
     .from('wildlife-photos')
-    .upload(filePath, file, {
-      contentType: file.type,
+    .upload(filePath, compressed, {
+      contentType: 'image/jpeg',
       upsert: false,
     });
 

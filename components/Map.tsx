@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getThumbnailUrl } from '@/lib/image-utils';
 import type { Observation } from '@/lib/supabase';
 
 // Fix Leaflet default icon issue in Next.js
@@ -82,10 +83,17 @@ export default function Map({ observations, userLocation, onMarkerClick }: MapPr
               <p className="text-sm text-gray-700 mt-2 italic">&ldquo;{obs.notes}&rdquo;</p>
             )}
             {obs.photo_url && (
+              // Load a tiny 120×120 thumbnail instead of the full-resolution
+              // original. This keeps map popups fast and saves bandwidth,
+              // especially on mobile. Supabase Image Transformations handle
+              // the resize on-the-fly at no extra storage cost.
               <img
-                src={obs.photo_url}
+                src={getThumbnailUrl(obs.photo_url, 120, 120)}
                 alt={obs.species_name}
-                className="mt-2 rounded-md w-full h-32 object-cover"
+                loading="lazy"
+                width={120}
+                height={120}
+                className="mt-2 rounded-md w-[120px] h-[120px] object-cover mx-auto"
               />
             )}
           </div>
