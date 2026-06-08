@@ -46,6 +46,7 @@ export default function SightingForm({
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'locating' | 'saving'>('idle');
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +138,11 @@ export default function SightingForm({
 
     if (!timestamp) {
       setError('Please select a date and time.');
+      return;
+    }
+
+    if (!privacyAcknowledged) {
+      setError('Please confirm that you understand this observation may be displayed publicly.');
       return;
     }
 
@@ -446,22 +452,43 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
             />
           </div>
 
+          {/* Privacy Acknowledgement */}
+          <div className="pt-1">
+            <div className="flex items-start gap-3">
+              <input
+                id="privacy-ack"
+                type="checkbox"
+                checked={privacyAcknowledged}
+                onChange={(e) => setPrivacyAcknowledged(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-nature-600 focus:ring-nature-600"
+              />
+              <label htmlFor="privacy-ack" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
+                I understand that the location, date, species information, notes, and any uploaded photo may be displayed publicly on the Wildlife Tracker map.
+              </label>
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500 pl-7">
+              Personal information is not collected, but observation details and map locations are visible to other users.
+            </p>
+          </div>
+
           {/* Submit */}
-<div className="pt-2 pb-4">
-  <button
-    type="submit"
-    disabled={isSubmitting || !userLocation}
-    className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
-  >
-    {!userLocation
-      ? 'Location Required'
-      : submitStatus === 'locating'
-      ? 'Getting location...'
-      : submitStatus === 'saving'
-      ? 'Saving...'
-      : 'Save Observation'}
-  </button>
-</div>
+          <div className="pt-2 pb-4">
+            <button
+              type="submit"
+              disabled={isSubmitting || !userLocation || !privacyAcknowledged}
+              className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {!userLocation
+                ? 'Location Required'
+                : !privacyAcknowledged
+                ? 'Confirm Privacy Notice'
+                : submitStatus === 'locating'
+                ? 'Getting location...'
+                : submitStatus === 'saving'
+                ? 'Saving...'
+                : 'Save Observation'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
