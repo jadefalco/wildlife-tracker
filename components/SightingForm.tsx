@@ -5,7 +5,10 @@ import { getSpeciesByCategory, filterSpeciesLocal, type SpeciesRecord } from '@/
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
 import { validateImageFile, isValidCoordinates } from '@/lib/image-utils';
 import exifr from 'exifr';
+import dynamic from 'next/dynamic';
 import SpeciesInfoPanel from '@/components/SpeciesInfoPanel';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
 function toLocalDateTimeString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -47,6 +50,7 @@ export default function SightingForm({
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoCoordinates, setPhotoCoordinates] = useState<Coordinates | null>(null);
   const [manualCoordinates, setManualCoordinates] = useState<Coordinates | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [locationSource, setLocationSource] = useState<LocationSource | null>(null);
   const [timestamp, setTimestamp] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,6 +185,21 @@ export default function SightingForm({
     setError(null);
   }, []);
 
+  const pickerInitialLocation = useMemo(
+    () => manualCoordinates ?? photoCoordinates ?? userLocation,
+    [manualCoordinates, photoCoordinates, userLocation]
+  );
+
+  const handleManualLocationSelect = useCallback((coords: Coordinates) => {
+    setManualCoordinates(coords);
+    setShowMapPicker(false);
+  }, []);
+
+  const handleResetManualLocation = useCallback(() => {
+    setManualCoordinates(null);
+    setShowMapPicker(false);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -311,6 +330,7 @@ export default function SightingForm({
       setPhotoPreview(null);
       setPhotoCoordinates(null);
       setManualCoordinates(null);
+      setShowMapPicker(false);
       setLocationSource(null);
       setSearchQuery('');
       setHoneypot('');
@@ -441,26 +461,96 @@ export default function SightingForm({
             <label className="label-text mb-1.5">GPS Location</label>
             <div className="rounded-lg bg-nature-50 px-4 py-3 text-sm text-nature-800">
               {resolvedLocation ? (
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-nature-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-nature-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>
-                    {resolvedLocation.coords.lat.toFixed(6)}, {resolvedLocation.coords.lng.toFixed(6)}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="flex items-center gap-1.5">
+                      {locationSource === 'photo' && <span>📸</span>}
+                      {locationSource === 'device' && <span>📍</span>}
+                      {locationSource === 'manual' && <span>📌</span>}
+                      <span>
+                        {locationSource === 'photo' && 'Location extracted from photo'}
+                        {locationSource === 'device' && 'Using current device location'}
+                        {locationSource === 'manual' && 'Using selected map location'}
+                      </span>
+                    </span>
+                    <span className="font-medium mt-0.5">
+                      {resolvedLocation.coords.lat.toFixed(6)}, {resolvedLocation.coords.lng.toFixed(6)}
+                    </span>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-earth-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                 <span className="text-red-700">
-  Location unavailable. Enable location services or upload a geotagged photo.
-</span>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-earth-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span className="text-red-700">
+                      Location unavailable. Enable location services or upload a geotagged photo.
+                    </span>
+                  </div>
+
+                  {photo && !photoCoordinates && !userLocation && (
+                    <div className="rounded-md bg-earth-50 p-3 text-sm text-earth-800">
+                      <p className="font-medium mb-2">⚠️ This photo does not contain GPS location data.</p>
+                      <p className="mb-2">To record an accurate wildlife sighting, either:</p>
+                      <ul className="list-disc list-inside space-y-1 mb-3">
+                        <li>Allow location access and return to the location where you observed the animal, OR</li>
+                        <li>Drop a pin on the map to choose the sighting location manually.</li>
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setShowMapPicker(true)}
+                        className="btn-secondary text-sm py-2 px-3 w-full"
+                      >
+                        Choose Location on Map
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
+            {resolvedLocation && (
+              <button
+                type="button"
+                onClick={() => setShowMapPicker(true)}
+                className="mt-2 text-sm font-medium text-nature-700 hover:text-nature-800"
+              >
+                Change Location on Map
+              </button>
+            )}
+
+            {showMapPicker && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-600 mb-1.5">Click the map to place the sighting location.</p>
+                <div className="h-80 w-full rounded-lg border border-gray-200 overflow-hidden">
+                  <MapPicker
+                    initialLocation={pickerInitialLocation}
+                    defaultZoom={pickerInitialLocation ? 15 : 13}
+                    onSelect={handleManualLocationSelect}
+                    onCancel={() => setShowMapPicker(false)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {manualCoordinates && (
+              <button
+                type="button"
+                onClick={handleResetManualLocation}
+                className="mt-2 text-sm text-red-600 hover:text-red-700"
+              >
+                {photoCoordinates
+                  ? 'Reset to Photo Location'
+                  : userLocation
+                  ? 'Reset to Device Location'
+                  : 'Clear manual location'}
+              </button>
+            )}
           </div>
 
           {/* Photo */}
@@ -503,18 +593,7 @@ export default function SightingForm({
                 className="mt-3 rounded-lg w-full h-48 object-cover"
               />
             )}
-            {locationSource && (
-              <p className="mt-2 text-xs text-nature-700 flex items-center gap-1.5">
-                {locationSource === 'photo' && <span>📸</span>}
-                {locationSource === 'device' && <span>📍</span>}
-                {locationSource === 'manual' && <span>📌</span>}
-                <span>
-                  {locationSource === 'photo' && 'Location extracted from photo'}
-                  {locationSource === 'device' && 'Using current device location'}
-                  {locationSource === 'manual' && 'Using selected map location'}
-                </span>
-              </p>
-            )}
+
           </div>
 
           {/* Notes */}

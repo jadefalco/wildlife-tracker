@@ -2,21 +2,13 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getThumbnailUrl } from '@/lib/image-utils';
+import { createSpeciesMarkerIcon } from '@/lib/species-markers';
+import MapLegend from '@/components/MapLegend';
 import type { Observation } from '@/lib/supabase';
 
-// Fix Leaflet default icon issue in Next.js
-const defaultIcon = L.icon({
-  iconUrl: '/marker-icon.png',
-  iconRetinaUrl: '/marker-icon-2x.png',
-  shadowUrl: '/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+
 
 function MapController({
   center,
@@ -64,7 +56,7 @@ export default function Map({ observations, userLocation, onMarkerClick }: MapPr
       <Marker
         key={obs.id}
         position={[Number(obs.latitude), Number(obs.longitude)]}
-        icon={defaultIcon}
+        icon={createSpeciesMarkerIcon(obs.species_name, obs.species_category)}
         eventHandlers={{
           click: () => onMarkerClick?.(obs),
         }}
@@ -111,19 +103,22 @@ export default function Map({ observations, userLocation, onMarkerClick }: MapPr
   }
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={13}
-      scrollWheelZoom={true}
-      style={{ height: '100%', width: '100%' }}
-      className="z-0"
-    >
-      <MapController center={mapCenter} zoom={userLocation ? 15 : 13} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {markers}
-    </MapContainer>
+    <div className="relative w-full h-full">
+      <MapContainer
+        center={mapCenter}
+        zoom={13}
+        scrollWheelZoom={true}
+        style={{ height: '100%', width: '100%' }}
+        className="z-0"
+      >
+        <MapController center={mapCenter} zoom={userLocation ? 15 : 13} />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {markers}
+      </MapContainer>
+      <MapLegend />
+    </div>
   );
 }

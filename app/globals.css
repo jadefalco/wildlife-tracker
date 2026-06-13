@@ -36,6 +36,24 @@
   font-family: inherit;
 }
 
+/* Map picker cursor and marker animation */
+.map-picker .leaflet-container {
+  cursor: crosshair;
+}
+
+.custom-map-marker {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-map-marker svg {
+  display: block;
+}
+
+.species-map-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
