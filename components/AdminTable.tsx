@@ -5,11 +5,13 @@ import type { Observation } from '@/lib/supabase';
 
 interface AdminTableProps {
   observations: Observation[];
+  onDelete?: (id: string, photoUrl: string | null) => Promise<void>;
 }
 
-export default function AdminTable({ observations }: AdminTableProps) {
+export default function AdminTable({ observations, onDelete }: AdminTableProps) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filtered = observations.filter((obs) => {
     const matchesSearch =
@@ -18,6 +20,20 @@ export default function AdminTable({ observations }: AdminTableProps) {
     const matchesCategory = categoryFilter === 'All' || obs.species_category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
+  const handleDelete = async (obs: Observation) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete this observation?'
+    );
+    if (!confirmed) return;
+
+    setDeletingId(obs.id);
+    try {
+      await onDelete?.(obs.id, obs.photo_url);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleExport = async () => {
     try {
@@ -80,9 +96,6 @@ export default function AdminTable({ observations }: AdminTableProps) {
                 Category
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Location
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date & Time
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -91,12 +104,18 @@ export default function AdminTable({ observations }: AdminTableProps) {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Photo
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">
                   No observations found.
                 </td>
               </tr>
@@ -105,9 +124,6 @@ export default function AdminTable({ observations }: AdminTableProps) {
                 <tr key={obs.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{obs.species_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{obs.species_category}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {obs.latitude.toFixed(5)}, {obs.longitude.toFixed(5)}
-                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                     {new Date(obs.observation_timestamp).toLocaleString('en-CA', {
                       dateStyle: 'short',
@@ -125,11 +141,24 @@ export default function AdminTable({ observations }: AdminTableProps) {
                         rel="noopener noreferrer"
                         className="text-nature-600 hover:text-nature-800 underline"
                       >
-                        View
+                        Yes
                       </a>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-400">No</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-400 font-mono truncate max-w-[120px]">
+                    {obs.id}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(obs)}
+                      disabled={deletingId === obs.id}
+                      className="inline-flex items-center rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingId === obs.id ? 'Deleting...' : 'Delete'}
+                    </button>
                   </td>
                 </tr>
               ))

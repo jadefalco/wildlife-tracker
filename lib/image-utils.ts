@@ -47,6 +47,20 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
 }
 
 /**
+ * Validates geographic coordinates.
+ *
+ * Rejects null island (0,0), non-finite values, and anything outside the
+ * valid latitude/longitude ranges. EXIF data should never be trusted blindly.
+ */
+export function isValidCoordinates(lat: number, lng: number): boolean {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (lat === 0 && lng === 0) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lng < -180 || lng > 180) return false;
+  return true;
+}
+
+/**
  * Compresses and resizes an image on the client using the Canvas API.
  *
  * - Preserves aspect ratio

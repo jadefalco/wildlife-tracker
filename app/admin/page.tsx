@@ -5,6 +5,7 @@ import AdminGuard from '@/components/AdminGuard';
 import AdminLayout from '@/components/AdminLayout';
 import AdminTable from '@/components/AdminTable';
 import { getObservations, type Observation } from '@/lib/supabase';
+import { getAdminPassword } from '@/lib/admin-session';
 
 function AdminPageContent() {
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -24,6 +25,41 @@ function AdminPageContent() {
       setIsLoading(false);
     }
   }, []);
+
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+
+  const handleDelete = useCallback(async (id: string, photoUrl: string | null) => {
+    setDeleteError(null);
+    setDeleteSuccess(null);
+    try {
+      const adminPassword = getAdminPassword();
+      if (!adminPassword) {
+        throw new Error('Admin session expired. Please log in again.');
+      }
+
+      const res = await fetch(`/api/observations/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword,
+        },
+        body: JSON.stringify({ photo_url: photoUrl }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete observation.');
+      }
+
+      setDeleteSuccess(data.message || 'Observation deleted successfully.');
+      await fetchData();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete observation.');
+    }
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +101,20 @@ function AdminPageContent() {
           </div>
         )}
 
+        {deleteError && (
+          <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+            <p className="font-medium">Delete Error</p>
+            <p>{deleteError}</p>
+          </div>
+        )}
+
+        {deleteSuccess && (
+          <div className="rounded-lg bg-green-50 p-4 text-sm text-green-700">
+            <p className="font-medium">Success</p>
+            <p>{deleteSuccess}</p>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="rounded-xl bg-white border border-gray-200 p-8 text-center text-gray-500">
             <div className="w-8 h-8 border-2 border-nature-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -72,7 +122,7 @@ function AdminPageContent() {
           </div>
         ) : (
           <div className="rounded-xl bg-white border border-gray-200 p-4 sm:p-6">
-            <AdminTable observations={observations} />
+            <AdminTable observations={observations} onDelete={handleDelete} />
           </div>
         )}
       </div>

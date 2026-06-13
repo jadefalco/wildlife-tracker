@@ -173,3 +173,41 @@ export async function getSpeciesCategories(): Promise<string[]> {
   const categories = Array.from(new Set((data ?? []).map((d: { category: string }) => d.category)));
   return categories;
 }
+
+/**
+ * Extracts the storage path from a Supabase public URL.
+ * Example: https://.../storage/v1/object/public/wildlife-photos/123.jpg
+ *          → "123.jpg"
+ */
+function extractStoragePath(photoUrl: string | null): string | null {
+  if (!photoUrl) return null;
+  try {
+    const url = new URL(photoUrl);
+    const match = url.pathname.match(/\/public\/wildlife-photos\/(.+)$/);
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Deletes a photo from the Supabase Storage bucket.
+ * Silently succeeds if the photo URL is null or malformed.
+ */
+export async function deletePhoto(photoUrl: string | null): Promise<void> {
+  const path = extractStoragePath(photoUrl);
+  if (!path) return;
+
+  const client = getSupabase();
+  const { error } = await client.storage.from('wildlife-photos').remove([path]);
+  if (error) throw error;
+}
+
+/**
+ * Deletes an observation from the database.
+ */
+export async function deleteObservation(id: string): Promise<void> {
+  const client = getSupabase();
+  const { error } = await client.from('observations').delete().eq('id', id);
+  if (error) throw error;
+}

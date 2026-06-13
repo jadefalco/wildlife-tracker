@@ -4,6 +4,7 @@ const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
 export interface AdminSession {
   authenticated: boolean;
   expiresAt: number;
+  password?: string;
 }
 
 export function getSession(): AdminSession | null {
@@ -26,13 +27,19 @@ export function isAuthenticated(): boolean {
   return getSession() !== null;
 }
 
-export function createSession(): void {
+export function createSession(password?: string): void {
   if (typeof window === 'undefined') return;
   const session: AdminSession = {
     authenticated: true,
     expiresAt: Date.now() + INACTIVITY_MS,
+    password,
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function getAdminPassword(): string | null {
+  const session = getSession();
+  return session?.password ?? null;
 }
 
 export function clearSession(): void {

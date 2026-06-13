@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getSpeciesByCategory, filterSpeciesLocal, type SpeciesRecord } from '@/lib/species';
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
-import { validateImageFile } from '@/lib/image-utils';
+import { validateImageFile, isValidCoordinates } from '@/lib/image-utils';
+import exifr from 'exifr';
 import SpeciesInfoPanel from '@/components/SpeciesInfoPanel';
 
 function toLocalDateTimeString(date: Date): string {
@@ -26,6 +27,13 @@ interface SightingFormProps {
 const CATEGORY_ORDER = ['Bird', 'Mammal', 'Reptile / Amphibian'] as const;
 type Category = (typeof CATEGORY_ORDER)[number];
 
+type LocationSource = 'manual' | 'photo' | 'device';
+
+interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
 export default function SightingForm({
   isOpen,
   onClose,
@@ -37,6 +45,9 @@ export default function SightingForm({
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoCoordinates, setPhotoCoordinates] = useState<Coordinates | null>(null);
+  const [manualCoordinates, setManualCoordinates] = useState<Coordinates | null>(null);
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(null);
   const [timestamp, setTimestamp] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -54,6 +65,18 @@ export default function SightingForm({
   const filteredSpecies = searchQuery.trim()
     ? filterSpeciesLocal(speciesList, searchQuery)
     : speciesList;
+
+  // Location priority hierarchy: manual pin > photo EXIF GPS > browser/device geolocation
+  const resolvedLocation = useMemo(() => {
+    if (manualCoordinates) return { coords: manualCoordinates, source: 'manual' as const };
+    if (photoCoordinates) return { coords: photoCoordinates, source: 'photo' as const };
+    if (userLocation) return { coords: userLocation, source: 'device' as const };
+    return null;
+  }, [manualCoordinates, photoCoordinates, userLocation]);
+
+  useEffect(() => {
+    setLocationSource(resolvedLocation?.source ?? null);
+  }, [resolvedLocation]);
 
   const selectedSpecies = speciesList.find((s) => s.display_name === speciesName);
 
@@ -110,20 +133,52 @@ export default function SightingForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    if (file) {
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        setError(validation.error ?? 'Invalid photo');
-        return;
-      }
-      setPhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-      setError(null);
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error ?? 'Invalid photo');
+      return;
     }
+
+    setPhoto(file);
+    setPhotoCoordinates(null);
+    // Only reset location source if it was photo; manual takes precedence and persists.
+    setLocationSource((prev) => (prev === 'photo' ? null : prev));
+
+    // Generate preview from the original file (does not strip EXIF).
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // Extract GPS from the ORIGINAL file before any compression or upload.
+    try {
+      const gps = await exifr.gps(file);
+      if (gps && isValidCoordinates(gps.latitude, gps.longitude)) {
+        setPhotoCoordinates({ lat: gps.latitude, lng: gps.longitude });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SightingForm] Photo GPS found:', { lat: gps.latitude, lng: gps.longitude });
+          console.log('[SightingForm] Using photo GPS');
+        }
+      } else if (gps) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SightingForm] Photo GPS invalid:', { lat: gps.latitude, lng: gps.longitude });
+        }
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SightingForm] No photo GPS present');
+        }
+      }
+    } catch (exifErr) {
+      // EXIF extraction failures must never block submission.
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SightingForm] EXIF extraction failed:', exifErr);
+      }
+    }
+
+    setError(null);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,26 +205,30 @@ export default function SightingForm({
     setSubmitStatus('locating');
 
     try {
-      // Capture fresh GPS at the exact moment of submission
-      // Require a valid location before allowing submission
-if (!userLocation) {
-  setError(
-    'Unable to determine your location. Please enable location services and try again.'
-  );
-  setIsSubmitting(false);
-  setSubmitStatus('idle');
-  return;
-}
+      // Location priority hierarchy: manual pin > photo EXIF GPS > browser/device geolocation
+      if (!resolvedLocation) {
+        setError(
+          'Unable to determine your location. Please enable location services or upload a geotagged photo.'
+        );
+        setIsSubmitting(false);
+        setSubmitStatus('idle');
+        return;
+      }
 
-let lat = userLocation.lat;
-let lng = userLocation.lng;
+      let lat = resolvedLocation.coords.lat;
+      let lng = resolvedLocation.coords.lng;
+      const source = resolvedLocation.source;
 
-console.log('[SightingForm] Initial coordinates from userLocation:', {
-  lat,
-  lng,
-});
-      if (navigator.geolocation) {
-        console.log('[SightingForm] navigator.geolocation exists. Calling getCurrentPosition...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[SightingForm] Initial coordinates from ${source}:`, { lat, lng });
+      }
+
+      // Manual coordinates and photo GPS are authoritative; only refresh device GPS.
+      if (source === 'device' && navigator.geolocation) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SightingForm] Using browser geolocation');
+          console.log('[SightingForm] navigator.geolocation exists. Calling getCurrentPosition...');
+        }
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -180,22 +239,35 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
           });
           lat = position.coords.latitude;
           lng = position.coords.longitude;
-          console.log('[SightingForm] getCurrentPosition SUCCESS:', { lat, lng, accuracy: position.coords.accuracy });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[SightingForm] getCurrentPosition SUCCESS:', { lat, lng, accuracy: position.coords.accuracy });
+          }
         } catch (geoErr) {
           const err = geoErr as GeolocationPositionError;
-          console.log('[SightingForm] getCurrentPosition FAILED:', {
-            code: err.code,
-            message: err.message,
-            PERMISSION_DENIED: err.code === 1,
-            POSITION_UNAVAILABLE: err.code === 2,
-            TIMEOUT: err.code === 3,
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[SightingForm] getCurrentPosition FAILED:', {
+              code: err.code,
+              message: err.message,
+              PERMISSION_DENIED: err.code === 1,
+              POSITION_UNAVAILABLE: err.code === 2,
+              TIMEOUT: err.code === 3,
+            });
+          }
+          // Fall back to the userLocation prop already captured in resolvedLocation.
         }
-      } else {
-        console.log('[SightingForm] navigator.geolocation does NOT exist');
+      } else if (process.env.NODE_ENV === 'development') {
+        if (source === 'manual') {
+          console.log('[SightingForm] Using manual coordinates');
+        } else if (source === 'photo') {
+          console.log('[SightingForm] Using photo GPS');
+        } else {
+          console.log('[SightingForm] navigator.geolocation does NOT exist');
+        }
       }
 
-      console.log('[SightingForm] Final coordinates being sent to API:', { lat, lng });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SightingForm] Final coordinates being sent to API:', { lat, lng, source });
+      }
 
       setSubmitStatus('saving');
 
@@ -237,6 +309,9 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
       setNotes('');
       setPhoto(null);
       setPhotoPreview(null);
+      setPhotoCoordinates(null);
+      setManualCoordinates(null);
+      setLocationSource(null);
       setSearchQuery('');
       setHoneypot('');
       setSubmitStatus('idle');
@@ -365,14 +440,14 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
           <div>
             <label className="label-text mb-1.5">GPS Location</label>
             <div className="rounded-lg bg-nature-50 px-4 py-3 text-sm text-nature-800">
-              {userLocation ? (
+              {resolvedLocation ? (
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-nature-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span>
-                    {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                    {resolvedLocation.coords.lat.toFixed(6)}, {resolvedLocation.coords.lng.toFixed(6)}
                   </span>
                 </div>
               ) : (
@@ -381,7 +456,7 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                  <span className="text-red-700">
-  Location unavailable. Enable location services to submit a sighting.
+  Location unavailable. Enable location services or upload a geotagged photo.
 </span>
                 </div>
               )}
@@ -405,6 +480,8 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
                   onClick={() => {
                     setPhoto(null);
                     setPhotoPreview(null);
+                    setPhotoCoordinates(null);
+                    setLocationSource((prev) => (prev === 'photo' ? null : prev));
                   }}
                   className="text-sm text-red-600 hover:text-red-700"
                 >
@@ -425,6 +502,18 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
                 alt="Preview"
                 className="mt-3 rounded-lg w-full h-48 object-cover"
               />
+            )}
+            {locationSource && (
+              <p className="mt-2 text-xs text-nature-700 flex items-center gap-1.5">
+                {locationSource === 'photo' && <span>📸</span>}
+                {locationSource === 'device' && <span>📍</span>}
+                {locationSource === 'manual' && <span>📌</span>}
+                <span>
+                  {locationSource === 'photo' && 'Location extracted from photo'}
+                  {locationSource === 'device' && 'Using current device location'}
+                  {locationSource === 'manual' && 'Using selected map location'}
+                </span>
+              </p>
             )}
           </div>
 
@@ -475,10 +564,10 @@ console.log('[SightingForm] Initial coordinates from userLocation:', {
           <div className="pt-2 pb-4">
             <button
               type="submit"
-              disabled={isSubmitting || !userLocation || !privacyAcknowledged}
+              disabled={isSubmitting || !resolvedLocation || !privacyAcknowledged}
               className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {!userLocation
+              {!resolvedLocation
                 ? 'Location Required'
                 : !privacyAcknowledged
                 ? 'Confirm Privacy Notice'

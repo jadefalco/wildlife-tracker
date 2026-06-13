@@ -195,7 +195,7 @@ export default function HomePage() {
                   });
                   const data = await res.json();
                   if (res.ok && data.success) {
-                    createSession();
+                    createSession(adminPassword);
                     router.push('/admin');
                   } else {
                     setAdminError(data.error || 'Incorrect password.');

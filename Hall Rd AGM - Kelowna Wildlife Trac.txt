@@ -1,0 +1,9 @@
+Hall Rd AGM - Kelowna Wildlife Tracker
+
+Hi, my name is Justin. I'm on the board and I also own a small web development agency. About 4 or 5 months ago, Don had mentioned wanting some sort of Wildlife Tracker app. At that time, I was thinking in my head, 'you know, I think I could do that' but the rest of the board agreed that in order to track wildlife, we'll just have to use the clunky one that the bureaucrats in Victoria designed for the province. A couple of months past and Don again mentioned at our meeting that he still had this dream of building that wildlife tracker app. And now, instead of just thinking it, I told him, 'you know, I think I could build that for you.' 
+And so I did. Now, it's not technically an app - you don't download it from the app store - instead, you just go to our website on your phone [show them on the projector] and log your sightings. [walk them through it].
+-You can either take a photo or upload a photo. It just needs to be under 5mb, which shouldn't be an issue. 
+-It then takes that information and stores it into a database that I will then, every year or so, upload it to that clunky bureaucrat-designed provincial site.
+-The database is free as long as it stays under 500 mb. 
+-This is a beta version and I'm open to suggestions, but I'd like everyone to try. So please pull out your phones and actually make a submission. Make sure you take a photo just to make sure everything works. And don't worry about the database. I'll delete everything tonight. 
+
