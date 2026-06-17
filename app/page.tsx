@@ -139,7 +139,7 @@ export default function HomePage() {
             <span className="text-nature-600 text-sm">Loading map...</span>
           </div>
         ) : (
-          <Map observations={observations} userLocation={userLocation} />
+          <Map observations={observations} userLocation={userLocation} isFormOpen={isFormOpen} />
         )}
       </div>
 

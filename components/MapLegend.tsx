@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { SPECIES_MARKER_TYPES, getSpeciesLegendSvg } from '@/lib/species-markers';
 
-export default function MapLegend() {
+export default function MapLegend({ isFormOpen }: { isFormOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(false);
 
@@ -12,7 +12,7 @@ export default function MapLegend() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (!visible) return null;
+  if (!visible || isFormOpen) return null;
 
   return (
     <div className="absolute bottom-4 right-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 w-44">

@@ -37,9 +37,10 @@ interface MapProps {
   observations: Observation[];
   userLocation: { lat: number; lng: number } | null;
   onMarkerClick?: (obs: Observation) => void;
+  isFormOpen?: boolean;
 }
 
-export default function Map({ observations, userLocation, onMarkerClick }: MapProps) {
+export default function Map({ observations, userLocation, onMarkerClick, isFormOpen }: MapProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function Map({ observations, userLocation, onMarkerClick }: MapPr
         />
         {markers}
       </MapContainer>
-      <MapLegend />
+      <MapLegend isFormOpen={isFormOpen} />
     </div>
   );
 }
