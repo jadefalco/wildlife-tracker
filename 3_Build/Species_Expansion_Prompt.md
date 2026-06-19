@@ -1,7 +1,5 @@
 # Species Expansion Prompt
 
-# Species Expansion Prompt
-
 ## Purpose
 
 Upgrade the species selection process to improve scientific usefulness while remaining easy for users.
@@ -40,13 +38,30 @@ The species dropdown should be searchable.
 * Western Meadowlark
 * American Goldfinch
 * Pine Siskin
+
+### Hummingbirds
+
+* Anna's Hummingbird
+* Rufous Hummingbird
+* Calliope Hummingbird
+* Hummingbird (Not Sure)
+
+### Raptors & Large Birds
+
 * Bald Eagle
 * Osprey
 * Red-tailed Hawk
 * Cooper's Hawk
+* Turkey Vulture
+
+### Waterbirds & Other Large Birds
+
 * Great Blue Heron
+
 * Common Raven
+
 * American Crow
+
 * Not Sure / Other
 
 ---
@@ -54,21 +69,37 @@ The species dropdown should be searchable.
 ## Mammals
 
 * Mule Deer
+
 * White-tailed Deer
+
 * Coyote
+
 * Black Bear
+
 * Grizzly Bear
+
 * Raccoon
+
 * Red Fox
+
 * Bobcat
+
 * Lynx
+
 * Snowshoe Hare
+
 * Nuttall's Cottontail
+
 * Beaver
+
 * Muskrat
+
 * Chipmunk
+
 * Ground Squirrel
+
 * River Otter
+
 * Not Sure / Other
 
 ---
@@ -76,15 +107,25 @@ The species dropdown should be searchable.
 ## Reptiles and Amphibians
 
 * Painted Turtle
+
 * Western Painted Turtle
+
 * Western Toad
+
 * Pacific Tree Frog
+
 * Long-toed Salamander
+
 * Garter Snake
+
 * Western Terrestrial Garter Snake
+
 * Common Garter Snake
+
 * Rubber Boa
+
 * Racer (Yellow-bellied Racer)
+
 * Not Sure / Other
 
 ---
