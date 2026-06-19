@@ -83,6 +83,13 @@ These species occur in Kelowna and the Central Okanagan.
 * Waxwing, Cedar
 
 ---
+## Hummingbirds
+
+* Anna's Hummingbird
+* Rufous Hummingbird
+* Calliope Hummingbird
+* Hummingbird (Not Sure)
+---
 
 ## Uncommon / Occasional Birds
 
