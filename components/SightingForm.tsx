@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getSpeciesByCategory, filterSpeciesLocal, type SpeciesRecord } from '@/lib/species';
 import { uploadPhoto, createObservation, type Observation } from '@/lib/supabase';
+import { STRUCTURE_CATEGORIES, type StructureCategory, type StructureEntry } from '@/lib/structures';
 import { validateImageFile, isValidCoordinates } from '@/lib/image-utils';
 import exifr from 'exifr';
 import dynamic from 'next/dynamic';
@@ -30,6 +31,8 @@ interface SightingFormProps {
 const CATEGORY_ORDER = ['Bird', 'Mammal', 'Reptile / Amphibian'] as const;
 type Category = (typeof CATEGORY_ORDER)[number];
 
+type ObservationType = 'wildlife' | 'structure';
+
 type LocationSource = 'manual' | 'photo' | 'device';
 
 interface Coordinates {
@@ -43,8 +46,11 @@ export default function SightingForm({
   userLocation,
   onSubmitSuccess,
 }: SightingFormProps) {
+  const [observationType, setObservationType] = useState<ObservationType>('wildlife');
   const [category, setCategory] = useState<Category>('Bird');
   const [speciesName, setSpeciesName] = useState('');
+  const [structureCategory, setStructureCategory] = useState<StructureCategory>(STRUCTURE_CATEGORIES[0]);
+  const [structureEntry, setStructureEntry] = useState<StructureEntry | null>(null);
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -83,6 +89,8 @@ export default function SightingForm({
   }, [resolvedLocation]);
 
   const selectedSpecies = speciesList.find((s) => s.display_name === speciesName);
+
+  const structureEntries = structureCategory.entries;
 
   useEffect(() => {
     if (isOpen) {
@@ -205,8 +213,13 @@ export default function SightingForm({
     setError(null);
     console.log('[SightingForm] Save Observation clicked. userLocation prop:', userLocation);
 
-    if (!speciesName.trim()) {
+    if (observationType === 'wildlife' && !speciesName.trim()) {
       setError('Please select a species.');
+      return;
+    }
+
+    if (observationType === 'structure' && !structureEntry) {
+      setError('Please select a structure.');
       return;
     }
 
@@ -295,19 +308,28 @@ export default function SightingForm({
         photoUrl = await uploadPhoto(photo);
       }
 
+      const requestBody: Record<string, unknown> = {
+        observation_type: observationType,
+        latitude: lat,
+        longitude: lng,
+        observation_timestamp: new Date(timestamp).toISOString(),
+        notes: notes.trim() || null,
+        photo_url: photoUrl,
+        website: honeypot,
+      };
+
+      if (observationType === 'wildlife') {
+        requestBody.species_category = category;
+        requestBody.species_name = speciesName;
+      } else {
+        requestBody.structure_category = structureCategory.displayName;
+        requestBody.structure_name = structureEntry?.displayName;
+      }
+
       const response = await fetch('/api/observations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          species_category: category,
-          species_name: speciesName,
-          latitude: lat,
-          longitude: lng,
-          observation_timestamp: new Date(timestamp).toISOString(),
-          notes: notes.trim() || null,
-          photo_url: photoUrl,
-          website: honeypot,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.status === 429) {
@@ -324,7 +346,11 @@ export default function SightingForm({
 
       const { observation } = await response.json();
       onSubmitSuccess(observation);
+      setObservationType('wildlife');
+      setCategory('Bird');
       setSpeciesName('');
+      setStructureCategory(STRUCTURE_CATEGORIES[0]);
+      setStructureEntry(null);
       setNotes('');
       setPhoto(null);
       setPhotoPreview(null);
@@ -351,7 +377,9 @@ export default function SightingForm({
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-          <h2 className="text-xl font-bold text-nature-900">Log Wildlife Sighting</h2>
+          <h2 className="text-xl font-bold text-nature-900">
+            {observationType === 'wildlife' ? 'Log Wildlife Sighting' : 'Log Animal Home / Structure'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-2"
@@ -368,81 +396,175 @@ export default function SightingForm({
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
           )}
 
-          {/* Species Category */}
+          {/* Observation Type */}
           <div>
-            <label className="label-text mb-1.5">Species Category</label>
-            <div className="grid grid-cols-3 gap-2">
-              {CATEGORY_ORDER.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => {
-                    setCategory(cat);
-                    setSpeciesName('');
-                    setSearchQuery('');
-                  }}
-                  className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors ${
-                    category === cat
-                      ? 'bg-nature-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <label className="label-text mb-1.5">What would you like to report?</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setObservationType('wildlife');
+                  setStructureEntry(null);
+                }}
+                className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors ${
+                  observationType === 'wildlife'
+                    ? 'bg-nature-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Wildlife Sighting
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setObservationType('structure');
+                  setSpeciesName('');
+                  setSearchQuery('');
+                }}
+                className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors ${
+                  observationType === 'structure'
+                    ? 'bg-nature-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Animal Home / Structure
+              </button>
             </div>
           </div>
 
-          {/* Species Search */}
-          <div className="relative" ref={dropdownRef}>
-            <label className="label-text mb-1.5">Species</label>
-            <input
-              type="text"
-              value={searchQuery || speciesName}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSpeciesName('');
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholder={isLoadingSpecies ? 'Loading species...' : 'Search species...'}
-              disabled={isLoadingSpecies}
-              className="input-field disabled:opacity-50"
-            />
-            {showDropdown && filteredSpecies.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 max-h-56 overflow-auto">
-                {filteredSpecies.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => {
-                      setSpeciesName(s.display_name);
-                      setSearchQuery('');
-                      setShowDropdown(false);
-                    }}
-                    className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-nature-50 ${
-                      speciesName === s.display_name ? 'bg-nature-50 font-medium text-nature-800' : 'text-gray-700'
-                    }`}
-                  >
-                    {s.display_name}
-                    {s.rarity === 'Uncommon' && (
-                      <span className="ml-2 text-xs text-earth-600">(Uncommon)</span>
-                    )}
-                  </button>
-                ))}
+          {observationType === 'wildlife' && (
+            <>
+              {/* Species Category */}
+              <div>
+                <label className="label-text mb-1.5">Species Category</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATEGORY_ORDER.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setCategory(cat);
+                        setSpeciesName('');
+                        setSearchQuery('');
+                      }}
+                      className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors ${
+                        category === cat
+                          ? 'bg-nature-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-            <p className="mt-1.5 text-xs text-gray-500">
-              If unsure, select &ldquo;Not Sure / Other&rdquo; — accuracy is more important than guessing.
-            </p>
 
-            {/* Species Information Panel */}
-            {selectedSpecies && (
-              <div className="mt-3">
-                <SpeciesInfoPanel species={selectedSpecies} />
+              {/* Species Search */}
+              <div className="relative" ref={dropdownRef}>
+                <label className="label-text mb-1.5">Species</label>
+                <input
+                  type="text"
+                  value={searchQuery || speciesName}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSpeciesName('');
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder={isLoadingSpecies ? 'Loading species...' : 'Search species...'}
+                  disabled={isLoadingSpecies}
+                  className="input-field disabled:opacity-50"
+                />
+                {showDropdown && filteredSpecies.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 max-h-56 overflow-auto">
+                    {filteredSpecies.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setSpeciesName(s.display_name);
+                          setSearchQuery('');
+                          setShowDropdown(false);
+                        }}
+                        className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-nature-50 ${
+                          speciesName === s.display_name ? 'bg-nature-50 font-medium text-nature-800' : 'text-gray-700'
+                        }`}
+                      >
+                        {s.display_name}
+                        {s.rarity === 'Uncommon' && (
+                          <span className="ml-2 text-xs text-earth-600">(Uncommon)</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1.5 text-xs text-gray-500">
+                  If unsure, select &ldquo;Not Sure / Other&rdquo; — accuracy is more important than guessing.
+                </p>
+
+                {/* Species Information Panel */}
+                {selectedSpecies && (
+                  <div className="mt-3">
+                    <SpeciesInfoPanel species={selectedSpecies} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
+
+          {observationType === 'structure' && (
+            <>
+              {/* Structure Category */}
+              <div>
+                <label className="label-text mb-1.5">Structure Category</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {STRUCTURE_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setStructureCategory(cat);
+                        setStructureEntry(null);
+                      }}
+                      className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors ${
+                        structureCategory.id === cat.id
+                          ? 'bg-nature-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="mr-1">{cat.emoji}</span>
+                      {cat.displayName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Structure Selection */}
+              <div>
+                <label className="label-text mb-1.5">Structure</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {structureEntries.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => setStructureEntry(entry)}
+                      className={`rounded-lg py-2.5 px-2 text-sm font-medium transition-colors text-left ${
+                        structureEntry?.id === entry.id
+                          ? 'bg-nature-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="mr-1">{entry.emoji}</span>
+                      {entry.displayName}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  If unsure, select &ldquo;Animal Home (Unknown)&rdquo; or &ldquo;Other Structure&rdquo; — accuracy is more important than guessing.
+                </p>
+              </div>
+            </>
+          )}
 
           {/* Date & Time */}
           <div>

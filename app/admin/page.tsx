@@ -72,18 +72,18 @@ function AdminPageContent() {
           {[
             { label: 'Total', value: observations.length, color: 'bg-nature-100 text-nature-800' },
             {
-              label: 'Birds',
-              value: observations.filter((o) => o.species_category === 'Bird').length,
+              label: 'Wildlife',
+              value: observations.filter((o) => o.observation_type === 'wildlife').length,
               color: 'bg-sky-100 text-sky-800',
             },
             {
-              label: 'Mammals',
-              value: observations.filter((o) => o.species_category === 'Mammal').length,
+              label: 'Structures',
+              value: observations.filter((o) => o.observation_type === 'structure').length,
               color: 'bg-amber-100 text-amber-800',
             },
             {
-              label: 'Reptiles / Amphibians',
-              value: observations.filter((o) => o.species_category === 'Reptile / Amphibian').length,
+              label: 'Birds',
+              value: observations.filter((o) => o.observation_type === 'wildlife' && o.species_category === 'Bird').length,
               color: 'bg-emerald-100 text-emerald-800',
             },
           ].map((stat) => (

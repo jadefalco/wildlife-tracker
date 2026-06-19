@@ -114,17 +114,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const observationType = body.observation_type === 'structure' ? 'structure' : 'wildlife';
+
+    const insertData: Record<string, unknown> = {
+      observation_type: observationType,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      observation_timestamp: body.observation_timestamp,
+      notes: body.notes ?? null,
+      photo_url: body.photo_url ?? null,
+    };
+
+    if (observationType === 'wildlife') {
+      if (!body.species_category || !body.species_name) {
+        return NextResponse.json(
+          { error: 'Species category and species name are required for wildlife observations.' },
+          { status: 400 }
+        );
+      }
+      insertData.species_category = body.species_category;
+      insertData.species_name = body.species_name;
+    } else {
+      if (!body.structure_category || !body.structure_name) {
+        return NextResponse.json(
+          { error: 'Structure category and structure name are required for structure observations.' },
+          { status: 400 }
+        );
+      }
+      insertData.structure_category = body.structure_category;
+      insertData.structure_name = body.structure_name;
+    }
+
     const { data, error } = await getSupabase()
       .from('observations')
-      .insert({
-        species_category: body.species_category,
-        species_name: body.species_name,
-        latitude: body.latitude,
-        longitude: body.longitude,
-        observation_timestamp: body.observation_timestamp,
-        notes: body.notes ?? null,
-        photo_url: body.photo_url ?? null,
-      })
+      .insert(insertData)
       .select()
       .single();
 

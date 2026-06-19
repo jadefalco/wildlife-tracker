@@ -142,12 +142,14 @@ export function parseSpeciesFile(filePath: string): ParseResult {
   return { species, category, fileName, logs };
 }
 
+const EXCLUDED_SPECIES_FILES = new Set(['Animal_Homes_Structures_List.md']);
+
 export function parseAllSpeciesFiles(speciesDir: string): { allSpecies: ParsedSpecies[]; allLogs: string[] } {
   const allSpecies: ParsedSpecies[] = [];
   const allLogs: string[] = [];
 
   const files = fs.readdirSync(speciesDir)
-    .filter((f) => f.endsWith('.md'))
+    .filter((f) => f.endsWith('.md') && !EXCLUDED_SPECIES_FILES.has(f))
     .sort();
 
   for (const file of files) {

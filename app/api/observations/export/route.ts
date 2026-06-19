@@ -16,8 +16,11 @@ export async function GET() {
 
     const rows = (data ?? []).map((obs) => ({
       id: obs.id,
-      species_category: obs.species_category,
-      species_name: obs.species_name,
+      observation_type: obs.observation_type,
+      species_category: obs.species_category ?? '',
+      species_name: obs.species_name ?? '',
+      structure_category: obs.structure_category ?? '',
+      structure_name: obs.structure_name ?? '',
       latitude: obs.latitude,
       longitude: obs.longitude,
       observation_timestamp: obs.observation_timestamp,
@@ -29,8 +32,11 @@ export async function GET() {
     const csv = Papa.unparse(rows, {
       columns: [
         'id',
+        'observation_type',
         'species_category',
         'species_name',
+        'structure_category',
+        'structure_name',
         'latitude',
         'longitude',
         'observation_timestamp',

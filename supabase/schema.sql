@@ -4,8 +4,11 @@
 -- Observations table
 CREATE TABLE IF NOT EXISTS observations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  species_category TEXT NOT NULL,
-  species_name TEXT NOT NULL,
+  observation_type TEXT NOT NULL DEFAULT 'wildlife' CHECK (observation_type IN ('wildlife', 'structure')),
+  species_category TEXT,
+  species_name TEXT,
+  structure_category TEXT,
+  structure_name TEXT,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
   observation_timestamp TIMESTAMPTZ NOT NULL,
@@ -17,6 +20,8 @@ CREATE TABLE IF NOT EXISTS observations (
 -- Index for faster map queries
 CREATE INDEX IF NOT EXISTS idx_observations_location ON observations (latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_observations_timestamp ON observations (observation_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_observations_type ON observations (observation_type);
+CREATE INDEX IF NOT EXISTS idx_observations_structure_category ON observations (structure_category);
 
 -- Species table (dynamic, driven by markdown files)
 CREATE TABLE IF NOT EXISTS species (

@@ -19,8 +19,11 @@ export function getSupabase(): SupabaseClient {
 
 export interface Observation {
   id: string;
-  species_category: string;
-  species_name: string;
+  observation_type: 'wildlife' | 'structure';
+  species_category: string | null;
+  species_name: string | null;
+  structure_category: string | null;
+  structure_name: string | null;
   latitude: number;
   longitude: number;
   observation_timestamp: string;
@@ -45,8 +48,11 @@ export interface SpeciesRecord {
 }
 
 export interface CreateObservationInput {
-  species_category: string;
-  species_name: string;
+  observation_type: 'wildlife' | 'structure';
+  species_category?: string | null;
+  species_name?: string | null;
+  structure_category?: string | null;
+  structure_name?: string | null;
   latitude: number;
   longitude: number;
   observation_timestamp: string;
@@ -59,8 +65,11 @@ export async function createObservation(input: CreateObservationInput): Promise<
   const { data, error } = await client
     .from('observations')
     .insert({
-      species_category: input.species_category,
-      species_name: input.species_name,
+      observation_type: input.observation_type,
+      species_category: input.species_category ?? null,
+      species_name: input.species_name ?? null,
+      structure_category: input.structure_category ?? null,
+      structure_name: input.structure_name ?? null,
       latitude: input.latitude,
       longitude: input.longitude,
       observation_timestamp: input.observation_timestamp,

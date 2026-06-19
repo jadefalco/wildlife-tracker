@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getThumbnailUrl } from '@/lib/image-utils';
 import { createSpeciesMarkerIcon } from '@/lib/species-markers';
+import { createStructureMarkerIcon } from '@/lib/structure-markers';
 import MapLegend from '@/components/MapLegend';
 import type { Observation } from '@/lib/supabase';
 
@@ -57,15 +58,23 @@ export default function Map({ observations, userLocation, onMarkerClick, isFormO
       <Marker
         key={obs.id}
         position={[Number(obs.latitude), Number(obs.longitude)]}
-        icon={createSpeciesMarkerIcon(obs.species_name, obs.species_category)}
+        icon={
+          obs.observation_type === 'structure'
+            ? createStructureMarkerIcon(obs.structure_category, obs.structure_name)
+            : createSpeciesMarkerIcon(obs.species_name ?? '', obs.species_category)
+        }
         eventHandlers={{
           click: () => onMarkerClick?.(obs),
         }}
       >
         <Popup>
           <div className="min-w-[200px]">
-            <p className="font-semibold text-nature-800">{obs.species_name}</p>
-            <p className="text-sm text-gray-500">{obs.species_category}</p>
+            <p className="font-semibold text-nature-800">
+              {obs.observation_type === 'structure' ? obs.structure_name : obs.species_name}
+            </p>
+            <p className="text-sm text-gray-500">
+              {obs.observation_type === 'structure' ? obs.structure_category : obs.species_category}
+            </p>
             <p className="text-sm text-gray-600 mt-1">
               {new Date(obs.observation_timestamp).toLocaleString('en-CA', {
                 dateStyle: 'medium',
@@ -82,7 +91,7 @@ export default function Map({ observations, userLocation, onMarkerClick, isFormO
               // the resize on-the-fly at no extra storage cost.
               <img
                 src={getThumbnailUrl(obs.photo_url, 120, 120)}
-                alt={obs.species_name}
+                alt={obs.observation_type === 'structure' ? (obs.structure_name ?? '') : (obs.species_name ?? '')}
                 loading="lazy"
                 width={120}
                 height={120}
